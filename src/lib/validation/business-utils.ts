@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 사업자등록번호 검증 유틸리티
  */
 
@@ -7,8 +7,32 @@ export interface BusinessNumberValidationResult {
   error?: string;
 }
 
+const businessNumberHyphenRegex = /^\d{3}-\d{2}-\d{5}$/;
+const digitsOnlyBusinessNumberRegex = /^\d{10}$/;
+const digitsOnlyPhoneRegex = /^\d{9,11}$/;
+
+function isValidBusinessNumberDigits(value: string): boolean {
+  return digitsOnlyBusinessNumberRegex.test(value);
+}
+
+function isValidPhoneDigits(value: string): boolean {
+  if (!digitsOnlyPhoneRegex.test(value) || !value.startsWith('0')) {
+    return false;
+  }
+
+  if (value.startsWith('02')) {
+    return value.length === 9 || value.length === 10;
+  }
+
+  if (value.startsWith('010')) {
+    return value.length === 10 || value.length === 11;
+  }
+
+  return value.length === 10 || value.length === 11;
+}
+
 /**
- * 사업자등록번호를 검증합니다 (XXX-XX-XXXXX 형식).
+ * 사업자등록번호를 검증합니다 (XXX-XX-XXXXX 형식 또는 10자리 숫자).
  */
 export function validateBusinessNumber(businessNumber: string): BusinessNumberValidationResult {
   if (!businessNumber || typeof businessNumber !== 'string') {
@@ -17,38 +41,20 @@ export function validateBusinessNumber(businessNumber: string): BusinessNumberVa
 
   const trimmedNumber = businessNumber.trim();
 
-  // 형식 검증 (XXX-XX-XXXXX)
-  const businessNumberRegex = /^\d{3}-\d{2}-\d{5}$/;
-  if (!businessNumberRegex.test(trimmedNumber)) {
-    return {
-      isValid: false,
-      error: '사업자등록번호 형식이 올바르지 않습니다. (XXX-XX-XXXXX 형태로 입력해주세요.)'
-    };
+  if (trimmedNumber.length === 0) {
+    return { isValid: false, error: '사업자등록번호를 입력해주세요.' };
   }
 
-  // 실제 검증 로직 (간단한 체크섬 알고리즘)
-  const digits = trimmedNumber.replace(/-/g, '').split('').map(Number);
+  const formatErrorMessage = '사업자등록번호 형식이 올바르지 않습니다. (XXX-XX-XXXXX 또는 10자리 숫자 형태로 입력해주세요.)';
+  const hasHyphen = trimmedNumber.includes('-');
+  const sanitizedNumber = trimmedNumber.replace(/-/g, '');
 
-  if (digits.length !== 10) {
-    return { isValid: false, error: '사업자등록번호는 10자리 숫자여야 합니다.' };
+  if (hasHyphen && !businessNumberHyphenRegex.test(trimmedNumber)) {
+    return { isValid: false, error: formatErrorMessage };
   }
 
-  // 체크섬 계산 (간단한 알고리즘)
-  const weights = [1, 3, 7, 1, 3, 7, 1, 3, 5];
-  let sum = 0;
-
-  for (let i = 0; i < 9; i++) {
-    sum += digits[i] * weights[i];
-  }
-
-  const checksum = (10 - (sum % 10)) % 10;
-  const lastDigit = digits[9];
-
-  if (checksum !== lastDigit) {
-    return {
-      isValid: false,
-      error: '올바른 사업자등록번호가 아닙니다. 다시 확인해주세요.'
-    };
+  if (!isValidBusinessNumberDigits(sanitizedNumber)) {
+    return { isValid: false, error: '사업자등록번호는 숫자 10자리여야 합니다.' };
   }
 
   return { isValid: true };
@@ -64,12 +70,22 @@ export function validatePhoneNumber(phoneNumber: string): { isValid: boolean; er
 
   const trimmedNumber = phoneNumber.trim();
 
-  // 휴대폰번호 형식 검증 (XXX-XXXX-XXXX)
+  if (trimmedNumber.length === 0) {
+    return { isValid: false, error: '전화번호를 입력해주세요.' };
+  }
+
+  // 휴대전화 번호 형식 검증(010-XXXX-XXXX)
   const mobileRegex = /^010-\d{4}-\d{4}$/;
-  // 일반 전화번호 형식 검증 (XX-XXX-XXXX 또는 XXX-XXXX-XXXX)
+  // 일반 전화번호 형식 검증(XX-XXX-XXXX 또는 XXX-XXXX-XXXX)
   const phoneRegex = /^0\d{1,2}-\d{3,4}-\d{4}$/;
 
-  if (!mobileRegex.test(trimmedNumber) && !phoneRegex.test(trimmedNumber)) {
+  const sanitizedNumber = trimmedNumber.replace(/-/g, '');
+
+  const matchesHyphenFormat = mobileRegex.test(trimmedNumber) || phoneRegex.test(trimmedNumber);
+  const matchesDigitsOnlyFormat = isValidPhoneDigits(trimmedNumber);
+  const matchesSanitizedDigits = isValidPhoneDigits(sanitizedNumber);
+
+  if (!matchesHyphenFormat && !matchesDigitsOnlyFormat && !matchesSanitizedDigits) {
     return {
       isValid: false,
       error: '전화번호 형식이 올바르지 않습니다. (XXX-XXXX-XXXX 또는 XX-XXX-XXXX 형태로 입력해주세요.)'

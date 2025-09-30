@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Users, Calendar, Clock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { MapPin, Users, Calendar, AlertCircle, Loader2 } from 'lucide-react';
 
 interface CampaignDetail {
   id: string;
@@ -20,7 +20,7 @@ interface CampaignDetail {
   recruitmentCount: number;
   startDate: string;
   endDate: string;
-  status: '모집중' | '모집종료' | '선정완료' | '조기종료';
+  status: '모집중' | '모집종료' | '진행완료' | '조기종료';
   advertiser: {
     companyName: string;
     category: string;
@@ -30,15 +30,15 @@ interface CampaignDetail {
 }
 
 export default function CampaignDetailPage() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { user, isAuthenticated, userRole } = useCurrentUser();
+  const { isAuthenticated, userRole } = useCurrentUser();
 
   const [campaign, setCampaign] = useState<CampaignDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const campaignId = params.id as string;
+  const campaignId = params?.id as string;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -58,14 +58,15 @@ export default function CampaignDetailPage() {
   const fetchCampaignDetail = async () => {
     try {
       const response = await fetch(`/api/campaigns/${campaignId}`);
-      const result = await response.json();
+      const payload = await response.json();
 
       if (!response.ok) {
-        setError(result.error?.message || '체험단 정보를 불러오는데 실패했습니다.');
+        const fallbackMessage = '체험단 정보를 불러오는데 실패했습니다.';
+        setError((payload?.error as { message?: string } | undefined)?.message ?? fallbackMessage);
         return;
       }
 
-      setCampaign(result.data);
+      setCampaign(payload as CampaignDetail);
     } catch (error) {
       setError('네트워크 오류가 발생했습니다.');
     } finally {
@@ -119,8 +120,8 @@ export default function CampaignDetailPage() {
         return <Badge className="bg-green-100 text-green-800">모집중</Badge>;
       case '모집종료':
         return <Badge variant="secondary">모집종료</Badge>;
-      case '선정완료':
-        return <Badge className="bg-blue-100 text-blue-800">선정완료</Badge>;
+      case '진행완료':
+        return <Badge className="bg-blue-100 text-blue-800">진행완료</Badge>;
       case '조기종료':
         return <Badge variant="outline">조기종료</Badge>;
       default:
