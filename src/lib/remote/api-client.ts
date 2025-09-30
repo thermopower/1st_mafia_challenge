@@ -1,4 +1,5 @@
 import axios, { isAxiosError } from "axios";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "",
@@ -38,3 +39,21 @@ export const extractApiErrorMessage = (
 };
 
 export { apiClient, isAxiosError };
+
+// Attach Supabase access token when available (client-side only)
+apiClient.interceptors.request.use(async (config) => {
+  try {
+    const supabase = getSupabaseBrowserClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (token) {
+      config.headers = config.headers ?? {};
+      (config.headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+    }
+  } catch {
+    // ignore
+  }
+  return config;
+});

@@ -6,6 +6,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { useSignup } from "@/features/feature01-signup/hooks/useSignup";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Alert 컴포넌트가 없으므로 임시 경고 박스로 대체합니다.
 
 const defaultFormState = {
   email: "",
@@ -22,6 +29,11 @@ export default function SignupPage({ params }: SignupPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, refresh } = useCurrentUser();
+
+  // 새로운 회원가입 시스템 사용
+  const signupHook = useSignup();
+
+  // 기존 Supabase Auth용 상태 (하위 호환성)
   const [formState, setFormState] = useState(defaultFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -105,87 +117,141 @@ export default function SignupPage({ params }: SignupPageProps) {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-4xl flex-col items-center justify-center gap-10 px-6 py-16">
-      <header className="flex flex-col items-center gap-3 text-center">
-        <h1 className="text-3xl font-semibold">회원가입</h1>
-        <p className="text-slate-500">
-          Supabase 계정으로 회원가입하고 프로젝트를 시작하세요.
-        </p>
-      </header>
-      <div className="grid w-full gap-8 md:grid-cols-2">
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-4 rounded-xl border border-slate-200 p-6 shadow-sm"
-        >
-          <label className="flex flex-col gap-2 text-sm text-slate-700">
-            이메일
-            <input
-              type="email"
-              name="email"
-              autoComplete="email"
-              required
-              value={formState.email}
-              onChange={handleChange}
-              className="rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
-            />
-          </label>
-          <label className="flex flex-col gap-2 text-sm text-slate-700">
-            비밀번호
-            <input
-              type="password"
-              name="password"
-              autoComplete="new-password"
-              required
-              value={formState.password}
-              onChange={handleChange}
-              className="rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
-            />
-          </label>
-          <label className="flex flex-col gap-2 text-sm text-slate-700">
-            비밀번호 확인
-            <input
-              type="password"
-              name="confirmPassword"
-              autoComplete="new-password"
-              required
-              value={formState.confirmPassword}
-              onChange={handleChange}
-              className="rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
-            />
-          </label>
-          {errorMessage ? (
-            <p className="text-sm text-rose-500">{errorMessage}</p>
-          ) : null}
-          {infoMessage ? (
-            <p className="text-sm text-emerald-600">{infoMessage}</p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={isSubmitting || isSubmitDisabled}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {isSubmitting ? "등록 중" : "회원가입"}
-          </button>
-          <p className="text-xs text-slate-500">
-            이미 계정이 있으신가요?{" "}
-            <Link
-              href="/login"
-              className="font-medium text-slate-700 underline hover:text-slate-900"
-            >
-              로그인으로 이동
-            </Link>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">회원가입</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            블로그 체험단 플랫폼에 가입하세요
           </p>
-        </form>
-        <figure className="overflow-hidden rounded-xl border border-slate-200">
+        </div>
+
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <form className="space-y-4">
+            {signupHook.error && (
+              <div className="rounded-md border border-red-300 bg-red-50 text-red-800 p-3 text-sm">
+                {signupHook.error}
+              </div>
+            )}
+            {signupHook.successMessage && (
+              <div className="rounded-md border border-green-300 bg-green-50 text-green-800 p-3 text-sm">
+                {signupHook.successMessage}
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="fullName">이름 *</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={signupHook.data.fullName}
+                onChange={(e) => signupHook.updateField('fullName', e.target.value)}
+                placeholder="실명을 입력하세요"
+                className="mt-1"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="phone">휴대폰번호 *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={signupHook.data.phone}
+                onChange={(e) => signupHook.updateField('phone', e.target.value)}
+                placeholder="010-1234-5678"
+                className="mt-1"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email">이메일 *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={signupHook.data.email}
+                onChange={(e) => signupHook.updateField('email', e.target.value)}
+                placeholder="example@email.com"
+                className="mt-1"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="userRole">역할 선택 *</Label>
+              <Select
+                value={signupHook.data.userRole}
+                onValueChange={(value: 'advertiser' | 'influencer') =>
+                  signupHook.updateField('userRole', value)
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="역할을 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="influencer">인플루언서</SelectItem>
+                  <SelectItem value="advertiser">광고주</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="authMethod">인증 방식 *</Label>
+              <Select
+                value={signupHook.data.authMethod}
+                onValueChange={(value: 'email' | 'external') =>
+                  signupHook.updateField('authMethod', value)
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="인증 방식을 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">이메일 인증</SelectItem>
+                  <SelectItem value="external">소셜 로그인</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center">
+              <Checkbox
+                id="terms"
+                checked={signupHook.data.termsAccepted}
+                onCheckedChange={(checked) => signupHook.updateField('termsAccepted', !!checked)}
+              />
+              <Label htmlFor="terms" className="ml-2 text-sm">
+                이용약관 및 개인정보처리방침에 동의합니다 *
+              </Label>
+            </div>
+
+            <Button
+              type="button"
+              className="w-full"
+              disabled={signupHook.isLoading || !signupHook.data.termsAccepted}
+              onClick={() => signupHook.submitSignup()}
+            >
+              {signupHook.isLoading ? '회원가입 중...' : '회원가입'}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center text-sm">
+            <span className="text-gray-600">이미 계정이 있으신가요? </span>
+            <Link href="/login" className="text-blue-600 hover:text-blue-500">
+              로그인
+            </Link>
+          </div>
+        </div>
+
+        <div className="text-center">
           <Image
-            src="https://picsum.photos/seed/signup/640/640"
+            src="https://picsum.photos/seed/signup/400/200"
             alt="회원가입"
-            width={640}
-            height={640}
-            className="h-full w-full object-cover"
-            priority
+            width={400}
+            height={200}
+            className="rounded-lg mx-auto"
           />
-        </figure>
+        </div>
       </div>
     </div>
   );
