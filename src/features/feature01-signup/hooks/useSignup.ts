@@ -109,6 +109,7 @@ export const useSignup = () => {
     setState({
       isLoading: false,
       error: null,
+      successMessage: null,
       data: initialFormData,
     });
   };
