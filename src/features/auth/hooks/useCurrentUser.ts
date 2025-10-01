@@ -24,9 +24,9 @@ export const useCurrentUser = () => {
           .from('user_profiles')
           .select('user_role')
           .eq('id', context.user.id)
-          .single();
+          .single<{ user_role: string | null }>();
 
-        if (data?.user_role === 'advertiser' || data?.user_role === 'influencer') {
+        if (data?.user_role && (data.user_role === 'advertiser' || data.user_role === 'influencer')) {
           setUserRole(data.user_role);
         } else {
           setUserRole(null);
