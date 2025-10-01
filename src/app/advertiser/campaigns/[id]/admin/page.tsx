@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { extractApiErrorMessage, isAxiosError } from '@/lib/remote/api-client';
+import { useToast } from '@/hooks/use-toast';
 
 const AccessDenied = () => (
   <main className="mx-auto flex max-w-2xl flex-col items-center gap-4 p-6 text-center">
@@ -51,6 +52,7 @@ export default function CampaignAdminPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const campaignId = (params?.id ?? '') as string;
+  const { toast } = useToast();
 
   const {
     data,
@@ -93,9 +95,67 @@ export default function CampaignAdminPage() {
   }, [data]);
 
   const handleEarlyTermination = () => {
-    updateStatus.mutate({ status: '조기종료', reason: earlyTerminationReason });
-    setIsEarlyTerminationDialogOpen(false);
-    setEarlyTerminationReason('');
+    updateStatus.mutate(
+      { status: '조기종료', reason: earlyTerminationReason },
+      {
+        onSuccess: () => {
+          toast({ title: '조기 종료되었습니다.' });
+          setIsEarlyTerminationDialogOpen(false);
+          setEarlyTerminationReason('');
+        },
+        onError: (err) => {
+          const message = extractApiErrorMessage(err, '조기 종료에 실패했습니다.');
+          toast({ title: '오류', description: message, variant: 'destructive' });
+        },
+      }
+    );
+  };
+
+  const handleCloseRecruitment = () => {
+    updateStatus.mutate(
+      { status: '모집종료' },
+      {
+        onSuccess: () => {
+          toast({ title: '모집이 종료되었습니다. 이제 지원자를 선정하거나 반려할 수 있습니다.' });
+        },
+        onError: (err) => {
+          const message = extractApiErrorMessage(err, '모집 종료에 실패했습니다.');
+          toast({ title: '오류', description: message, variant: 'destructive' });
+        },
+      }
+    );
+  };
+
+  const handleSelect = () => {
+    selectMutation.mutate(
+      { selectedInfluencerIds: selectedIds },
+      {
+        onSuccess: () => {
+          toast({ title: '선정되었습니다.' });
+          setSelected({});
+        },
+        onError: (err) => {
+          const message = extractApiErrorMessage(err, '선정 처리에 실패했습니다.');
+          toast({ title: '오류', description: message, variant: 'destructive' });
+        },
+      }
+    );
+  };
+
+  const handleReject = () => {
+    rejectMutation.mutate(
+      { rejectedInfluencerIds: selectedIds },
+      {
+        onSuccess: () => {
+          toast({ title: '반려되었습니다.' });
+          setSelected({});
+        },
+        onError: (err) => {
+          const message = extractApiErrorMessage(err, '반려 처리에 실패했습니다.');
+          toast({ title: '오류', description: message, variant: 'destructive' });
+        },
+      }
+    );
   };
 
   if (!campaignId) {
@@ -178,50 +238,73 @@ export default function CampaignAdminPage() {
           ))}
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => updateStatus.mutate({ status: '모집종료' })} size="sm">
-            모집 종료
-          </Button>
-          <Dialog open={isEarlyTerminationDialogOpen} onOpenChange={setIsEarlyTerminationDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="destructive" size="sm">조기 종료</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>조기 종료</DialogTitle>
-                <DialogDescription>
-                  체험단을 조기 종료하는 이유를 입력해주세요. 이 정보는 지원자들에게 공유됩니다.
-                </DialogDescription>
-              </DialogHeader>
-              <Textarea
-                placeholder="조기 종료 사유를 입력하세요..."
-                value={earlyTerminationReason}
-                onChange={(e) => setEarlyTerminationReason(e.target.value)}
-                rows={4}
-              />
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEarlyTerminationDialogOpen(false)}>취소</Button>
-                <Button variant="destructive" onClick={handleEarlyTermination}>조기 종료</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {data.campaignInfo.status === '모집중' && (
+            <Button
+              variant="secondary"
+              onClick={handleCloseRecruitment}
+              size="sm"
+              disabled={updateStatus.isPending}
+            >
+              모집 종료
+            </Button>
+          )}
+          {(data.campaignInfo.status === '모집중' || data.campaignInfo.status === '모집종료') && (
+            <Dialog open={isEarlyTerminationDialogOpen} onOpenChange={setIsEarlyTerminationDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={updateStatus.isPending}>
+                  조기 종료
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>조기 종료</DialogTitle>
+                  <DialogDescription>
+                    체험단을 조기 종료하는 이유를 입력해주세요. 이 정보는 지원자들에게 공유됩니다.
+                  </DialogDescription>
+                </DialogHeader>
+                <Textarea
+                  placeholder="조기 종료 사유를 입력하세요..."
+                  value={earlyTerminationReason}
+                  onChange={(e) => setEarlyTerminationReason(e.target.value)}
+                  rows={4}
+                />
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsEarlyTerminationDialogOpen(false)}>취소</Button>
+                  <Button variant="destructive" onClick={handleEarlyTermination} disabled={updateStatus.isPending}>
+                    조기 종료
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
-      <div className="flex gap-2">
-        <Button
-          onClick={() => selectMutation.mutate({ selectedInfluencerIds: selectedIds })}
-          disabled={selectedIds.length === 0 || selectMutation.isPending}
-        >
-          선정 처리 ({selectedIds.length})
-        </Button>
-        <Button
-          variant="destructive"
-          onClick={() => rejectMutation.mutate({ rejectedInfluencerIds: selectedIds })}
-          disabled={selectedIds.length === 0 || rejectMutation.isPending}
-        >
-          반려 처리 ({selectedIds.length})
-        </Button>
-      </div>
+      {data.campaignInfo.status === '모집종료' && (
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSelect}
+            disabled={selectedIds.length === 0 || selectMutation.isPending}
+          >
+            선정 처리 ({selectedIds.length})
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleReject}
+            disabled={selectedIds.length === 0 || rejectMutation.isPending}
+          >
+            반려 처리 ({selectedIds.length})
+          </Button>
+        </div>
+      )}
+
+      {(data.campaignInfo.status === '조기종료' || data.campaignInfo.status === '선정완료') && (
+        <div className="rounded-md border border-muted bg-muted/50 p-4 text-sm text-muted-foreground">
+          {data.campaignInfo.status === '조기종료'
+            ? '이 체험단은 조기 종료되었습니다.'
+            : '이 체험단은 선정이 완료되었습니다.'}
+        </div>
+      )}
 
       {filteredApplicants.length === 0 ? (
         <Card>

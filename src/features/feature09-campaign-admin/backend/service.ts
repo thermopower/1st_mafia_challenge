@@ -112,8 +112,8 @@ export async function updateCampaignStatus(
       return failure(400, campaignAdminErrorCodes.STATUS_UPDATE_FAILED, '시작일 이전에는 조기 종료를 할 수 없습니다.');
     }
 
-    if (campaign.status !== '모집중') {
-      return failure(400, campaignAdminErrorCodes.STATUS_UPDATE_FAILED, '모집중 상태에서만 조기 종료할 수 있습니다.');
+    if (campaign.status !== '모집중' && campaign.status !== '모집종료') {
+      return failure(400, campaignAdminErrorCodes.STATUS_UPDATE_FAILED, '조기 종료는 모집중 또는 모집종료 상태에서만 가능합니다.');
     }
   }
 
