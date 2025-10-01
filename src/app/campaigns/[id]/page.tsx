@@ -20,7 +20,7 @@ interface CampaignDetail {
   recruitmentCount: number;
   startDate: string;
   endDate: string;
-  status: '모집중' | '모집종료' | '진행완료' | '조기종료';
+  status: '모집중' | '모집종료' | '선정완료' | '조기종료';
   advertiser: {
     companyName: string;
     category: string;
@@ -120,8 +120,8 @@ export default function CampaignDetailPage() {
         return <Badge className="bg-green-100 text-green-800">모집중</Badge>;
       case '모집종료':
         return <Badge variant="secondary">모집종료</Badge>;
-      case '진행완료':
-        return <Badge className="bg-blue-100 text-blue-800">진행완료</Badge>;
+      case '선정완료':
+        return <Badge className="bg-blue-100 text-blue-800">선정완료</Badge>;
       case '조기종료':
         return <Badge variant="outline">조기종료</Badge>;
       default:

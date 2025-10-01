@@ -12,7 +12,7 @@ const mapUser = (user: User) => ({
 });
 
 export const loadCurrentUser = async (): Promise<CurrentUserSnapshot> => {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient({ persistSession: false });
   const result = await supabase.auth.getUser();
   const user = result.data.user;
 

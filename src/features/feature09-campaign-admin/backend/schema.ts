@@ -30,7 +30,12 @@ export const CampaignStatusUpdateSchema = z.object({
 
 // 인플루언서 선정 입력 스키마
 export const InfluencerSelectionSchema = z.object({
-  selectedInfluencerIds: z.array(z.string()),
+  selectedInfluencerIds: z.array(z.string()).nonempty('최소 1명 이상 선택해야 합니다.'),
+});
+
+// 인플루언서 반려 입력 스키마
+export const InfluencerRejectionSchema = z.object({
+  rejectedInfluencerIds: z.array(z.string()).nonempty('최소 1명 이상 선택해야 합니다.'),
 });
 
 // 체험단 관리 에러 코드
@@ -40,6 +45,7 @@ export const campaignAdminErrorCodes = {
   APPLICANTS_FETCH_FAILED: 'APPLICANTS_FETCH_FAILED',
   STATUS_UPDATE_FAILED: 'STATUS_UPDATE_FAILED',
   SELECTION_UPDATE_FAILED: 'SELECTION_UPDATE_FAILED',
+  REJECTION_UPDATE_FAILED: 'REJECTION_UPDATE_FAILED',
   CAMPAIGN_NOT_RECRUITING: 'CAMPAIGN_NOT_RECRUITING'
 } as const;
 
