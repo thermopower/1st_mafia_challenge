@@ -42,7 +42,7 @@ const safeSetCookies = (
       expires?: Date;
       maxAge?: number;
       httpOnly?: boolean;
-      sameSite?: "lax" | "strict" | "none";
+      sameSite?: boolean | "lax" | "strict" | "none";
       secure?: boolean;
     };
   }>,

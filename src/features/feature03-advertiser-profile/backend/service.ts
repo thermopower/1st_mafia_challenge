@@ -5,7 +5,7 @@ import {
   advertiserProfileErrorCodes,
   type AdvertiserProfileErrorCode
 } from './schema';
-import type { ErrorResult, SuccessResult } from '@/backend/http/response';
+import { success, failure, type ErrorResult, type SuccessResult } from '@/backend/http/response';
 
 export interface AdvertiserProfileInput {
   companyName: string;
@@ -40,14 +40,12 @@ export async function createAdvertiserProfile(
     // 입력값 검증
     const validationResult = AdvertiserProfileInputSchema.safeParse(input);
     if (!validationResult.success) {
-      return {
-        ok: false,
-        error: {
-          code: advertiserProfileErrorCodes.INVALID_BUSINESS_NUMBER,
-          message: '입력값이 올바르지 않습니다.',
-          details: validationResult.error.format()
-        }
-      };
+      return failure(
+        400,
+        advertiserProfileErrorCodes.INVALID_BUSINESS_NUMBER,
+        '입력값이 올바르지 않습니다.',
+        validationResult.error.format()
+      );
     }
 
     const { companyName, address, phone, businessNumber, representativeName, category } = validationResult.data;
@@ -60,13 +58,11 @@ export async function createAdvertiserProfile(
       .single();
 
     if (existingBusiness) {
-      return {
-        ok: false,
-        error: {
-          code: advertiserProfileErrorCodes.DUPLICATE_BUSINESS_NUMBER,
-          message: '이미 등록된 사업자등록번호입니다.'
-        }
-      };
+      return failure(
+        409,
+        advertiserProfileErrorCodes.DUPLICATE_BUSINESS_NUMBER,
+        '이미 등록된 사업자등록번호입니다.'
+      );
     }
 
     // 광고주 프로필 생성
@@ -85,13 +81,11 @@ export async function createAdvertiserProfile(
       .single();
 
     if (profileError || !profileData) {
-      return {
-        ok: false,
-        error: {
-          code: advertiserProfileErrorCodes.PROFILE_CREATION_FAILED,
-          message: '광고주 프로필 생성에 실패했습니다.'
-        }
-      };
+      return failure(
+        500,
+        advertiserProfileErrorCodes.PROFILE_CREATION_FAILED,
+        '광고주 프로필 생성에 실패했습니다.'
+      );
     }
 
     // 사용자 프로필의 완료 상태 업데이트
@@ -112,19 +106,14 @@ export async function createAdvertiserProfile(
       updatedAt: profileData.updated_at
     };
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result, 201);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: advertiserProfileErrorCodes.PROFILE_CREATION_FAILED,
-        message: '광고주 프로필 생성 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      advertiserProfileErrorCodes.PROFILE_CREATION_FAILED,
+      '광고주 프로필 생성 중 오류가 발생했습니다.'
+    );
   }
 }
 
@@ -143,13 +132,11 @@ export async function getAdvertiserProfile(
       .single();
 
     if (profileError || !profileData) {
-      return {
-        ok: false,
-        error: {
-          code: advertiserProfileErrorCodes.PROFILE_NOT_FOUND,
-          message: '광고주 프로필을 찾을 수 없습니다.'
-        }
-      };
+      return failure(
+        404,
+        advertiserProfileErrorCodes.PROFILE_NOT_FOUND,
+        '광고주 프로필을 찾을 수 없습니다.'
+      );
     }
 
     const result: AdvertiserProfileResult = {
@@ -164,19 +151,14 @@ export async function getAdvertiserProfile(
       updatedAt: profileData.updated_at
     };
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: advertiserProfileErrorCodes.PROFILE_NOT_FOUND,
-        message: '프로필 조회 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      advertiserProfileErrorCodes.PROFILE_NOT_FOUND,
+      '프로필 조회 중 오류가 발생했습니다.'
+    );
   }
 }
 
@@ -221,13 +203,11 @@ export async function updateAdvertiserProfile(
           .single();
 
         if (existingBusiness) {
-          return {
-            ok: false,
-            error: {
-              code: advertiserProfileErrorCodes.DUPLICATE_BUSINESS_NUMBER,
-              message: '이미 등록된 사업자등록번호입니다.'
-            }
-          };
+          return failure(
+            409,
+            advertiserProfileErrorCodes.DUPLICATE_BUSINESS_NUMBER,
+            '이미 등록된 사업자등록번호입니다.'
+          );
         }
       }
       updateData.business_number = input.businessNumber;
@@ -250,13 +230,11 @@ export async function updateAdvertiserProfile(
       .single();
 
     if (updateError || !updatedProfile) {
-      return {
-        ok: false,
-        error: {
-          code: advertiserProfileErrorCodes.PROFILE_UPDATE_FAILED,
-          message: '프로필 업데이트에 실패했습니다.'
-        }
-      };
+      return failure(
+        500,
+        advertiserProfileErrorCodes.PROFILE_UPDATE_FAILED,
+        '프로필 업데이트에 실패했습니다.'
+      );
     }
 
     const result: AdvertiserProfileResult = {
@@ -271,18 +249,13 @@ export async function updateAdvertiserProfile(
       updatedAt: updatedProfile.updated_at
     };
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: advertiserProfileErrorCodes.PROFILE_UPDATE_FAILED,
-        message: '프로필 업데이트 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      advertiserProfileErrorCodes.PROFILE_UPDATE_FAILED,
+      '프로필 업데이트 중 오류가 발생했습니다.'
+    );
   }
 }

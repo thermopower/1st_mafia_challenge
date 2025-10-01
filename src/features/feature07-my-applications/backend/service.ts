@@ -4,7 +4,7 @@ import {
   myApplicationsErrorCodes,
   type MyApplicationsErrorCode
 } from './schema';
-import type { ErrorResult, SuccessResult } from '@/backend/http/response';
+import { success, failure, type ErrorResult, type SuccessResult } from '@/backend/http/response';
 
 export interface MyApplicationsQuery {
   page?: number;
@@ -47,14 +47,12 @@ export async function getMyApplications(
     // 쿼리 파라미터 검증
     const validationResult = MyApplicationsQuerySchema.safeParse(query);
     if (!validationResult.success) {
-      return {
-        ok: false,
-        error: {
-          code: myApplicationsErrorCodes.INVALID_QUERY_PARAMS,
-          message: '쿼리 파라미터가 올바르지 않습니다.',
-          details: validationResult.error.format()
-        }
-      };
+      return failure(
+        400,
+        myApplicationsErrorCodes.INVALID_QUERY_PARAMS,
+        '쿼리 파라미터가 올바르지 않습니다.',
+        validationResult.error.format()
+      );
     }
 
     const {
@@ -75,13 +73,11 @@ export async function getMyApplications(
       .single();
 
     if (!influencerProfile) {
-      return {
-        ok: false,
-        error: {
-          code: myApplicationsErrorCodes.USER_NOT_INFLUENCER,
-          message: '인플루언서 프로필이 등록되지 않았습니다.'
-        }
-      };
+      return failure(
+        404,
+        myApplicationsErrorCodes.USER_NOT_INFLUENCER,
+        '인플루언서 프로필이 등록되지 않았습니다.'
+      );
     }
 
     // 지원 목록 조회
@@ -118,13 +114,11 @@ export async function getMyApplications(
     const { data: applications, error: applicationsError } = await queryBuilder;
 
     if (applicationsError) {
-      return {
-        ok: false,
-        error: {
-          code: myApplicationsErrorCodes.APPLICATIONS_FETCH_FAILED,
-          message: '지원 목록 조회에 실패했습니다.'
-        }
-      };
+      return failure(
+        500,
+        myApplicationsErrorCodes.APPLICATIONS_FETCH_FAILED,
+        '지원 목록 조회에 실패했습니다.'
+      );
     }
 
     // 전체 개수 조회 (페이징 정보용)
@@ -169,18 +163,13 @@ export async function getMyApplications(
       }
     };
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: myApplicationsErrorCodes.APPLICATIONS_FETCH_FAILED,
-        message: '지원 목록 조회 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      myApplicationsErrorCodes.APPLICATIONS_FETCH_FAILED,
+      '지원 목록 조회 중 오류가 발생했습니다.'
+    );
   }
 }

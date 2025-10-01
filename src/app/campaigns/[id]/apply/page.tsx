@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,28 +36,7 @@ export default function CampaignApplyPage() {
     visitDate: '',
   });
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
-    if (userRole !== 'influencer') {
-      setError('인플루언서만 체험단에 지원할 수 있습니다.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!campaignId) {
-      setError('체험단 ID가 필요합니다.');
-      setIsLoading(false);
-      return;
-    }
-
-    fetchCampaignInfo();
-  }, [isAuthenticated, userRole, campaignId, router]);
-
-  const fetchCampaignInfo = async () => {
+  const fetchCampaignInfo = useCallback(async () => {
     try {
       const response = await fetch(`/api/campaigns/${campaignId}`);
       const result = await response.json();
@@ -78,7 +57,28 @@ export default function CampaignApplyPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [campaignId]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (userRole !== 'influencer') {
+      setError('인플루언서만 체험단에 지원할 수 있습니다.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!campaignId) {
+      setError('체험단 ID가 필요합니다.');
+      setIsLoading(false);
+      return;
+    }
+
+    fetchCampaignInfo();
+  }, [isAuthenticated, userRole, campaignId, router, fetchCampaignInfo]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({

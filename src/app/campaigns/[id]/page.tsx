@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,22 +40,7 @@ export default function CampaignDetailPage() {
 
   const campaignId = params?.id as string;
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
-    if (!campaignId) {
-      setError('체험단 ID가 필요합니다.');
-      setIsLoading(false);
-      return;
-    }
-
-    fetchCampaignDetail();
-  }, [isAuthenticated, campaignId, router]);
-
-  const fetchCampaignDetail = async () => {
+  const fetchCampaignDetail = useCallback(async () => {
     try {
       const response = await fetch(`/api/campaigns/${campaignId}`);
       const payload = await response.json();
@@ -72,7 +57,22 @@ export default function CampaignDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [campaignId]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (!campaignId) {
+      setError('체험단 ID가 필요합니다.');
+      setIsLoading(false);
+      return;
+    }
+
+    fetchCampaignDetail();
+  }, [isAuthenticated, campaignId, router, fetchCampaignDetail]);
 
   const handleApply = () => {
     router.push(`/campaigns/${campaignId}/apply`);

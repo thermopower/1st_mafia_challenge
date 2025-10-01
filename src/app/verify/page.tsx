@@ -49,7 +49,7 @@ export default function VerifyPage() {
     // 역할별 페이지로 이동
     await refresh();
     router.replace(`/${role}/profile`);
-  }, [email, otp, role, router]);
+  }, [email, otp, role, router, refresh]);
 
   return (
     <main className="max-w-sm mx-auto p-6 space-y-4">

@@ -6,7 +6,7 @@ import {
   type InfluencerProfileErrorCode
 } from './schema';
 import { validateSNSUrl } from '@/lib/validation/sns-utils';
-import type { ErrorResult, SuccessResult } from '@/backend/http/response';
+import { success, failure, type ErrorResult, type SuccessResult } from '@/backend/http/response';
 
 export interface InfluencerProfileInput {
   birthDate: string;
@@ -38,14 +38,12 @@ export async function createInfluencerProfile(
     // 입력값 검증
     const validationResult = InfluencerProfileInputSchema.safeParse(input);
     if (!validationResult.success) {
-      return {
-        ok: false,
-        error: {
-          code: influencerProfileErrorCodes.INVALID_SNS_URL,
-          message: '입력값이 올바르지 않습니다.',
-          details: validationResult.error.format()
-        }
-      };
+      return failure(
+        400,
+        influencerProfileErrorCodes.INVALID_SNS_URL,
+        '입력값이 올바르지 않습니다.',
+        validationResult.error.format()
+      );
     }
 
     const { birthDate, snsChannelName, snsChannelUrl, followerCount } = validationResult.data;
@@ -53,13 +51,11 @@ export async function createInfluencerProfile(
     // SNS URL 검증 및 플랫폼 추출
     const snsValidation = validateSNSUrl(snsChannelUrl);
     if (!snsValidation.isValid) {
-      return {
-        ok: false,
-        error: {
-          code: influencerProfileErrorCodes.INVALID_SNS_URL,
-          message: snsValidation.error || 'SNS URL이 올바르지 않습니다.'
-        }
-      };
+      return failure(
+        400,
+        influencerProfileErrorCodes.INVALID_SNS_URL,
+        snsValidation.error || 'SNS URL이 올바르지 않습니다.'
+      );
     }
 
     // 중복 채널명 검사 (플랫폼별로 유니크해야 함)
@@ -70,13 +66,11 @@ export async function createInfluencerProfile(
       .single();
 
     if (existingChannel) {
-      return {
-        ok: false,
-        error: {
-          code: influencerProfileErrorCodes.DUPLICATE_CHANNEL,
-          message: '이미 사용중인 채널명입니다.'
-        }
-      };
+      return failure(
+        409,
+        influencerProfileErrorCodes.DUPLICATE_CHANNEL,
+        '이미 사용중인 채널명입니다.'
+      );
     }
 
     // 인플루언서 프로필 생성
@@ -94,13 +88,11 @@ export async function createInfluencerProfile(
       .single();
 
     if (profileError || !profileData) {
-      return {
-        ok: false,
-        error: {
-          code: influencerProfileErrorCodes.PROFILE_CREATION_FAILED,
-          message: '인플루언서 프로필 생성에 실패했습니다.'
-        }
-      };
+      return failure(
+        500,
+        influencerProfileErrorCodes.PROFILE_CREATION_FAILED,
+        '인플루언서 프로필 생성에 실패했습니다.'
+      );
     }
 
     // 사용자 프로필의 완료 상태 업데이트
@@ -120,19 +112,14 @@ export async function createInfluencerProfile(
       updatedAt: profileData.updated_at
     };
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result, 201);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: influencerProfileErrorCodes.PROFILE_CREATION_FAILED,
-        message: '인플루언서 프로필 생성 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      influencerProfileErrorCodes.PROFILE_CREATION_FAILED,
+      '인플루언서 프로필 생성 중 오류가 발생했습니다.'
+    );
   }
 }
 
@@ -151,13 +138,11 @@ export async function getInfluencerProfile(
       .single();
 
     if (profileError || !profileData) {
-      return {
-        ok: false,
-        error: {
-          code: influencerProfileErrorCodes.PROFILE_NOT_FOUND,
-          message: '인플루언서 프로필을 찾을 수 없습니다.'
-        }
-      };
+      return failure(
+        404,
+        influencerProfileErrorCodes.PROFILE_NOT_FOUND,
+        '인플루언서 프로필을 찾을 수 없습니다.'
+      );
     }
 
     const result: InfluencerProfileResult = {
@@ -171,19 +156,14 @@ export async function getInfluencerProfile(
       updatedAt: profileData.updated_at
     };
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: influencerProfileErrorCodes.PROFILE_NOT_FOUND,
-        message: '프로필 조회 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      influencerProfileErrorCodes.PROFILE_NOT_FOUND,
+      '프로필 조회 중 오류가 발생했습니다.'
+    );
   }
 }
 
@@ -220,13 +200,11 @@ export async function updateInfluencerProfile(
           .single();
 
         if (existingChannel) {
-          return {
-            ok: false,
-            error: {
-              code: influencerProfileErrorCodes.DUPLICATE_CHANNEL,
-              message: '이미 사용중인 채널명입니다.'
-            }
-          };
+          return failure(
+            409,
+            influencerProfileErrorCodes.DUPLICATE_CHANNEL,
+            '이미 사용중인 채널명입니다.'
+          );
         }
       }
       updateData.sns_channel_name = input.snsChannelName;
@@ -235,13 +213,11 @@ export async function updateInfluencerProfile(
     if (input.snsChannelUrl !== undefined) {
       const snsValidation = validateSNSUrl(input.snsChannelUrl);
       if (!snsValidation.isValid) {
-        return {
-          ok: false,
-          error: {
-            code: influencerProfileErrorCodes.INVALID_SNS_URL,
-            message: snsValidation.error || 'SNS URL이 올바르지 않습니다.'
-          }
-        };
+        return failure(
+          400,
+          influencerProfileErrorCodes.INVALID_SNS_URL,
+          snsValidation.error || 'SNS URL이 올바르지 않습니다.'
+        );
       }
       updateData.sns_channel_url = input.snsChannelUrl;
     }
@@ -259,13 +235,11 @@ export async function updateInfluencerProfile(
       .single();
 
     if (updateError || !updatedProfile) {
-      return {
-        ok: false,
-        error: {
-          code: influencerProfileErrorCodes.PROFILE_UPDATE_FAILED,
-          message: '프로필 업데이트에 실패했습니다.'
-        }
-      };
+      return failure(
+        500,
+        influencerProfileErrorCodes.PROFILE_UPDATE_FAILED,
+        '프로필 업데이트에 실패했습니다.'
+      );
     }
 
     const result: InfluencerProfileResult = {
@@ -279,18 +253,13 @@ export async function updateInfluencerProfile(
       updatedAt: updatedProfile.updated_at
     };
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: influencerProfileErrorCodes.PROFILE_UPDATE_FAILED,
-        message: '프로필 업데이트 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      influencerProfileErrorCodes.PROFILE_UPDATE_FAILED,
+      '프로필 업데이트 중 오류가 발생했습니다.'
+    );
   }
 }

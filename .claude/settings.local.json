@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(dir \"C:\\Users\\js\\Desktop\\supernext\\src\\features\\feature09-campaign-admin\")",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run type-check:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []

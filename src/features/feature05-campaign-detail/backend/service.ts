@@ -4,7 +4,7 @@ import {
   campaignDetailErrorCodes,
   type CampaignDetailErrorCode
 } from './schema';
-import type { ErrorResult, SuccessResult } from '@/backend/http/response';
+import { success, failure, type ErrorResult, type SuccessResult } from '@/backend/http/response';
 
 export interface CampaignDetailResult {
   id: string;
@@ -56,13 +56,11 @@ export async function getCampaignDetail(
       .single();
 
     if (campaignError || !campaignData) {
-      return {
-        ok: false,
-        error: {
-          code: campaignDetailErrorCodes.CAMPAIGN_NOT_FOUND,
-          message: '체험단을 찾을 수 없습니다.'
-        }
-      };
+      return failure(
+        404,
+        campaignDetailErrorCodes.CAMPAIGN_NOT_FOUND,
+        '체험단을 찾을 수 없습니다.'
+      );
     }
 
     // 사용자 권한 확인 (인플루언서 프로필 등록 여부)
@@ -95,18 +93,13 @@ export async function getCampaignDetail(
       canApply
     };
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: campaignDetailErrorCodes.CAMPAIGN_FETCH_FAILED,
-        message: '체험단 상세 조회 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      campaignDetailErrorCodes.CAMPAIGN_FETCH_FAILED,
+      '체험단 상세 조회 중 오류가 발생했습니다.'
+    );
   }
 }

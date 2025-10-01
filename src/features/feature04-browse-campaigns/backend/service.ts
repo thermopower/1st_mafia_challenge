@@ -5,7 +5,7 @@ import {
   campaignListErrorCodes,
   type CampaignListErrorCode
 } from './schema';
-import type { ErrorResult, SuccessResult } from '@/backend/http/response';
+import { success, failure, type ErrorResult, type SuccessResult } from '@/backend/http/response';
 
 export interface CampaignListQuery {
   page?: number;
@@ -54,14 +54,12 @@ export async function getCampaignList(
     // 쿼리 파라미터 검증
     const validationResult = CampaignListQuerySchema.safeParse(query);
     if (!validationResult.success) {
-      return {
-        ok: false,
-        error: {
-          code: campaignListErrorCodes.INVALID_QUERY_PARAMS,
-          message: '쿼리 파라미터가 올바르지 않습니다.',
-          details: validationResult.error.format()
-        }
-      };
+      return failure(
+        400,
+        campaignListErrorCodes.INVALID_QUERY_PARAMS,
+        '쿼리 파라미터가 올바르지 않습니다.',
+        validationResult.error.format()
+      );
     }
 
     const {
@@ -122,13 +120,11 @@ export async function getCampaignList(
     const { data: campaigns, error: campaignsError } = await queryBuilder;
 
     if (campaignsError) {
-      return {
-        ok: false,
-        error: {
-          code: campaignListErrorCodes.CAMPAIGNS_FETCH_FAILED,
-          message: '체험단 목록 조회에 실패했습니다.'
-        }
-      };
+      return failure(
+        500,
+        campaignListErrorCodes.CAMPAIGNS_FETCH_FAILED,
+        '체험단 목록 조회에 실패했습니다.'
+      );
     }
 
     // 전체 개수 조회 (페이징 정보용)
@@ -187,19 +183,14 @@ export async function getCampaignList(
       }
     };
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: campaignListErrorCodes.CAMPAIGNS_FETCH_FAILED,
-        message: '체험단 목록 조회 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      campaignListErrorCodes.CAMPAIGNS_FETCH_FAILED,
+      '체험단 목록 조회 중 오류가 발생했습니다.'
+    );
   }
 }
 
@@ -241,13 +232,11 @@ export async function getFeaturedCampaigns(
       .limit(limit);
 
     if (error) {
-      return {
-        ok: false,
-        error: {
-          code: campaignListErrorCodes.CAMPAIGNS_FETCH_FAILED,
-          message: '추천 체험단 조회에 실패했습니다.'
-        }
-      };
+      return failure(
+        500,
+        campaignListErrorCodes.CAMPAIGNS_FETCH_FAILED,
+        '추천 체험단 조회에 실패했습니다.'
+      );
     }
 
     const result = (campaigns || []).map(campaign => ({
@@ -262,18 +251,13 @@ export async function getFeaturedCampaigns(
       category: (campaign.advertiser as any)?.category || '기타'
     }));
 
-    return {
-      ok: true,
-      data: result
-    };
+    return success(result);
 
   } catch (error) {
-    return {
-      ok: false,
-      error: {
-        code: campaignListErrorCodes.CAMPAIGNS_FETCH_FAILED,
-        message: '추천 체험단 조회 중 오류가 발생했습니다.'
-      }
-    };
+    return failure(
+      500,
+      campaignListErrorCodes.CAMPAIGNS_FETCH_FAILED,
+      '추천 체험단 조회 중 오류가 발생했습니다.'
+    );
   }
 }

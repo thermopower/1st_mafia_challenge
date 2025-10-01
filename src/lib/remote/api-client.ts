@@ -49,8 +49,10 @@ apiClient.interceptors.request.use(async (config) => {
     } = await supabase.auth.getSession();
     const token = session?.access_token;
     if (token) {
-      config.headers = config.headers ?? {};
-      (config.headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+      if (!config.headers) {
+        config.headers = {} as any;
+      }
+      config.headers.Authorization = `Bearer ${token}`;
     }
   } catch {
     // ignore
